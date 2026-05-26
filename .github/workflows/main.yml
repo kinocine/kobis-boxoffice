@@ -1,0 +1,38 @@
+name: Daily BoxOffice Bot
+
+on:
+  schedule:
+    - cron: '0 19 * * *' # UTC 기준 19시는 한국 시간(KST)으로 새벽 4시입니다.
+  workflow_dispatch: # 버튼 눌러서 수동으로 즉시 실행하고 싶을 때 쓰는 옵션
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 저장소 코드 가져오기
+      uses: actions/checkout@v3
+
+    - name: 파이썬 세팅
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 필요한 패키지 설치
+      run: pip install requests
+
+    - name: 박스오피스 파이썬 실행
+      env:
+        KOBIS_API_KEY: ${{ secrets.KOBIS_API_KEY }}
+      run: python boxoffice.py
+
+    - name: 생성된 마크다운 파일을 깃허브에 자동 커밋
+      run: |
+        git config --local user.email "bot@kobis.com"
+        git config --local user.name "Kobis Bot"
+        git add *-boxoffice.md
+        if git diff --quiet --cached; then
+          echo "변경사항 없음"
+        else
+          git commit -m "Auto-update BoxOffice"
+          git push
+        fi
